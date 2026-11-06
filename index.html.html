@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1stepAI – pierwszy klient w Ełku</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF1F6;--card:#fff;--ink:#14213D;--mut:#5B6577;--line:#D5DBE6;--mag:#E6007E;--cy:#0090C8;--yel:#FFD400}
+@media (prefers-color-scheme:dark){:root{--bg:#0F1626;--card:#18223A;--ink:#EEF1F6;--mut:#A3AEC4;--line:#2D3A58;--cy:#4CC3F0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Figtree,system-ui,sans-serif}
+.app{max-width:430px;margin:0 auto;min-height:100vh;padding:20px 18px 40px}
+h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;line-height:1.1;margin:0}
+h1{font-size:34px;font-weight:800}h2{font-size:26px;font-weight:800;margin-bottom:6px}h3{font-size:18px;font-weight:700}
+p{margin:0 0 12px}.mut{color:var(--mut);font-size:14px}
+.brand{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:20px}
+.brand b{color:var(--mag)}
+.steps{display:flex;gap:6px;margin-bottom:22px}
+.steps i{flex:1;height:5px;border-radius:3px;background:var(--line)}
+.steps i.on{background:var(--mag)}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+label{display:block;font-weight:600;margin:16px 0 8px}
+input[type=text]{width:100%;padding:12px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font:inherit}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:9px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font:inherit;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn{width:100%;margin-top:18px;padding:15px;border:0;border-radius:12px;background:var(--mag);color:#fff;font:700 17px 'Bricolage Grotesque',sans-serif;cursor:pointer}
+.btn.alt{background:transparent;color:var(--ink);border:1.5px solid var(--ink);margin-top:10px}
+:focus-visible{outline:3px solid var(--cy);outline-offset:2px}
+.idea{width:100%;text-align:left;cursor:pointer;font:inherit;color:var(--ink);border-left:6px solid var(--cy)}
+.idea:nth-child(2){border-left-color:var(--mag)}.idea:nth-child(3){border-left-color:var(--yel)}
+.idea h3{margin-bottom:4px}
+.pack{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.pack.mid{border-color:var(--mag)}
+.price{font:800 24px 'Bricolage Grotesque',sans-serif;white-space:nowrap}
+.msg{white-space:pre-wrap;background:var(--bg);border-radius:10px;padding:14px;font-size:15px}
+.day{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line)}.day b{min-width:44px;color:var(--mag)}
+.track{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.track button{padding:10px 2px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--mut);font:600 12px Figtree,sans-serif;cursor:pointer}
+.track button.done{background:var(--yel);border-color:var(--yel);color:#14213D}
+.loader{text-align:center;padding:70px 10px}
+.dot{width:46px;height:46px;border-radius:50%;border:5px solid var(--line);border-top-color:var(--mag);margin:0 auto 18px;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.dot{animation:none}}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;font-size:14px;max-width:90%;z-index:9}
+.back{background:none;border:0;color:var(--mut);font:inherit;cursor:pointer;padding:0 0 10px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="brand"><span>1step<b>AI</b></span><span class="mut">Ełk</span></div>
+  <div class="steps" id="steps"></div>
+  <main id="view"></main>
+</div>
+<script>
+// Scenariusze „AI” przygotowane na sztywno (plan B na demo). Do podmiany na prawdziwe wywołanie AI.
+const IDEAS=[
+ {t:'Social media dla barbera i fryzjera',why:'Salony w Ełku żyją z Instagrama, ale rzadko mają stały plan postów.',biz:'barber shop lub salon fryzjerski',svc:'Miesięczny pakiet postów i rolek dla salonu',
+  desc:'Projektujesz grafiki, stories i krótkie rolki z metamorfoz. Salon dostaje stały plan publikacji bez zatrudniania agencji.',
+  packs:[['Start','8 postów w miesiącu',300],['Standard','12 postów + 4 stories',500],['Pro','16 postów + 4 rolki + raport',800]],
+  who:['salony fryzjerskie','barber shopy','studia paznokci'],
+  msg:'Dzień dobry! Mam na imię {n}, skończyłam technikum reklamy w Ełku. Zauważyłam, że Wasz Instagram mógłby wyglądać spójniej. Chętnie przygotuję Wam 3 darmowe projekty postów, żebyście zobaczyli efekt. Jeśli się spodobają, mam pakiety od {p} zł miesięcznie. Czy mogę wysłać propozycję?'},
+ {t:'Zdjęcia i grafiki menu dla kawiarni',why:'Lokalna gastronomia ma słabe zdjęcia dań, a to one sprzedają na Facebooku i Google.',biz:'kawiarnia, pizzeria lub bar',svc:'Sesja produktowa i odświeżenie menu',
+  desc:'Robisz zdjęcia 10 najlepszych pozycji telefonem i składasz z nich nowe menu oraz posty na social media.',
+  packs:[['Start','10 zdjęć + 3 grafiki',250],['Standard','20 zdjęć + menu A4',450],['Pro','30 zdjęć + menu + 8 postów',750]],
+  who:['kawiarnie','pizzerie','cukiernie'],
+  msg:'Dzień dobry! Jestem {n}, młoda grafik i fotograf z Ełku. Widziałam Wasze menu i myślę, że kilka dobrych zdjęć dań mogłoby przyciągnąć więcej gości. Zrobię próbną sesję jednego dania za darmo. Jeśli Wam się spodoba, pakiety startują od {p} zł. Kiedy macie chwilę na krótką rozmowę?'},
+ {t:'Plakaty i ulotki dla lokalnych firm',why:'Warsztaty, sklepy i gabinety nadal potrzebują druku, ale często mają stare lub brzydkie materiały.',biz:'warsztat, sklep lub gabinet',svc:'Projekt plakatu, ulotki i wizytówek',
+  desc:'Projektujesz komplet materiałów do druku w jednej spójnej identyfikacji. Firma dostaje gotowe pliki do drukarni.',
+  packs:[['Start','wizytówki + 1 ulotka',200],['Standard','plakat + ulotka + wizytówki',400],['Pro','pełny zestaw + baner',700]],
+  who:['warsztaty samochodowe','sklepy','gabinety'],
+  msg:'Dzień dobry! Nazywam się {n}, jestem absolwentką technikum reklamy w Ełku. Projektuję ulotki i plakaty dla lokalnych firm. Mogę przygotować darmową makietę ulotki dla Waszej firmy. Pakiety zaczynam od {p} zł. Czy mogę zajrzeć do Was w tym tygodniu z propozycją?'}
+];
+const SKILLS=['Grafika','Social media','Foto','Wideo','Druk','Projektowanie'];
+const S={step:0,skills:['Grafika','Social media'],name:'Kasia',hours:'5 h',goal:300,idea:0,track:0};
+const $=s=>document.querySelector(s),V=$('#view');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function steps(){$('#steps').innerHTML=[0,1,2,3].map(i=>`<i class="${i<=S.step?'on':''}"></i>`).join('')}
+function go(n){S.step=n;render();window.scrollTo(0,0)}
+function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),2800)}
+function chips(list,sel,fn){return list.map(x=>`<button class="chip" aria-pressed="${sel(x)}" onclick="${fn}('${x}')">${x}</button>`).join('')}
+
+function tSkill(x){S.skills=S.skills.includes(x)?S.skills.filter(s=>s!==x):[...S.skills,x];render()}
+function sHours(x){S.hours=x;render()}
+function sGoal(x){S.goal=+x;render()}
+
+function render(){
+  steps();
+  if(S.step===0){
+    V.innerHTML=`<h1>Zamień swoje umiejętności w pierwszego klienta</h1>
+    <p class="mut" style="margin-top:10px">Odpowiedz na 3 pytania. Dostaniesz gotową ofertę, cennik i wiadomość do firmy z Ełku.</p>
+    <label for="nm">Jak masz na imię?</label><input id="nm" type="text" value="${esc(S.name)}" oninput="S.name=this.value">
+    <label>Co umiesz robić?</label><div class="chips">${chips(SKILLS,x=>S.skills.includes(x),'tSkill')}</div>
+    <label>Ile czasu masz w tygodniu?</label><div class="chips">${chips(['2 h','5 h','10 h','20 h'],x=>S.hours===x,'sHours')}</div>
+    <label>Ile chcesz zarobić na start?</label><div class="chips">${[300,500,1000].map(x=>`<button class="chip" aria-pressed="${S.goal===x}" onclick="sGoal(${x})">${x} zł</button>`).join('')}</div>
+    <button class="btn" onclick="think(1,'AI szuka potrzeb firm w Ełku…')">Pokaż mi pomysły</button>`;
+  }
+  if(S.step===1){
+    V.innerHTML=`<h2>3 usługi dla Ciebie</h2><p class="mut">Dopasowane do: ${esc(S.skills.join(', ')||'Twoich umiejętności')}. Wybierz jedną.</p>
+    ${IDEAS.map((d,i)=>`<button class="card idea" onclick="S.idea=${i};think(2,'AI układa cennik…')"><h3>${d.t}</h3><p class="mut">${d.why}</p><span class="mut">Klienci: ${d.who.join(', ')}</span></button>`).join('')}
+    <button class="back" onclick="go(0)">← Zmień profil</button>`;
+  }
+  if(S.step===2){
+    const d=IDEAS[S.idea];
+    V.innerHTML=`<h2>${d.svc}</h2><p>${d.desc}</p>
+    ${d.packs.map((p,i)=>`<div class="card pack ${i===1?'mid':''}"><div><h3>${p[0]}</h3><span class="mut">${p[1]}</span></div><div class="price">${p[2]} zł</div></div>`).join('')}
+    <p class="mut">Pakiet Standard to najczęstszy wybór. Pierwszych ${S.goal} zł zarobisz, gdy zdobędziesz ${Math.ceil(S.goal/d.packs[0][2])} klienta w pakiecie Start.</p>
+    <button class="btn" onclick="think(3,'AI pisze wiadomość do firmy…')">Napisz wiadomość do klienta</button>
+    <button class="btn alt" onclick="go(1)">Wybierz inną usługę</button>`;
+  }
+  if(S.step===3){
+    const d=IDEAS[S.idea],m=d.msg.replace('{n}',S.name||'Kasia').replace('{p}',d.packs[0][2]);
+    const plan=[['Dz. 1','Zrób 3 przykładowe projekty do portfolio.'],['Dz. 2','Wypisz 10 firm: '+d.biz+'.'],['Dz. 3','Wyślij wiadomość do 5 firm.'],['Dz. 4','Odwiedź osobiście 3 firmy z ofertą w ręku.'],['Dz. 5','Odpowiedz na pytania, wyślij darmową próbkę.'],['Dz. 6','Zapytaj mentora o opinię i popraw cennik.'],['Dz. 7','Podpisz pierwsze zlecenie.']];
+    V.innerHTML=`<h2>Twój pierwszy klient</h2><p class="mut">Gotowa wiadomość do firmy: ${d.biz}.</p>
+    <div class="msg" id="msg">${esc(m)}</div>
+    <button class="btn" onclick="navigator.clipboard&&navigator.clipboard.writeText($('#msg').textContent);toast('Skopiowano wiadomość')">Kopiuj wiadomość</button>
+    <h3 style="margin:26px 0 8px">Plan na 7 dni</h3><div class="card">${plan.map(p=>`<div class="day"><b>${p[0]}</b><span>${p[1]}</span></div>`).join('')}</div>
+    <h3 style="margin:22px 0 8px">Twoje postępy</h3><div class="track">${['Wysłane','Odpowiedź','Zlecenie','Zapłacone'].map((x,i)=>`<button class="${i<S.track?'done':''}" onclick="S.track=${i}+1===S.track?${i}:${i}+1;render()">${x}</button>`).join('')}</div>
+    <p class="mut" style="margin-top:8px">${S.track===4?'Pierwsze pieniądze zarobione. Gratulacje!':'Stuknij etap, gdy go osiągniesz.'}</p>
+    <button class="btn alt" onclick="toast('Wysłano do mentora. Odpowiedź w ciągu 48 h.')">Poproś mentora o opinię</button>
+    <button class="back" style="margin-top:14px" onclick="S.track=0;go(0)">← Zacznij od nowa</button>`;
+  }
+}
+function think(n,txt){V.innerHTML=`<div class="loader" role="status"><div class="dot"></div><p>${txt}</p></div>`;setTimeout(()=>go(n),1100)}
+render();
+</script>
+</body>
+</html>
